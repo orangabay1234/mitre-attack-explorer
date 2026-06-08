@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const { v5: uuidv5 } = require("uuid");
 const openDB = require("./database");
+const apiHandle = require("./server");
 
 const MY_NAMESPACE = "12ab21ba-abba-4aab-abab-21ba12ab21ba";//for UUID
 async function DirectoryFilesScan(directoryPath)
@@ -15,7 +16,7 @@ async function DirectoryFilesScan(directoryPath)
 
             const content = await fs.readFile(fullFilePath, 'utf8');//getting the file content by reading it
 
-            console.log(`content of file: ${fileName}: `, content);
+            //console.log(`content of file: ${fileName}: `, content);
 
             const jsonFile = JSON.parse(content);//convert the content into json
 
@@ -36,7 +37,7 @@ async function DirectoryFilesScan(directoryPath)
             insertToAttackTable(primary_id, name, description, x_mitre_platforms, x_mitre_detection);
 
             const phases = object.kill_chain_phases ?? [];//if not exist put empty array
-            for(let i = 0; i < phases.length; i++)
+            for(let i = 0; i < phases.length; i++)//attack phases
             {
                 const phase_name = phases[i].phase_name ?? "NA";
                 //console.log(phase_name);
@@ -77,3 +78,4 @@ function insertToPhasesTable(attack_id, phase_name)
 
 const db = openDB();
 DirectoryFilesScan("C:\\Rafael-Project\\backend\\mitre cti master enterprise-attack-attack-pattern");
+apiHandle(db);
