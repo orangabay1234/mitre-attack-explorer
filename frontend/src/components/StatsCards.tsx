@@ -124,6 +124,6 @@ function StatsCards()
             </Paper>
         </Box>
     );
-} 
+}
 
 export default StatsCards;
