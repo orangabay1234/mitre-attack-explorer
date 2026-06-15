@@ -2,10 +2,10 @@
   "name": "rafael-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "database.js",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node index.js",
+    "import": "node importData.js"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +15,7 @@
     "better-sqlite3": "^12.10.0",
     "commander": "^12.1.0",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "uuid": "^14.0.0"
   }

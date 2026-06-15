@@ -113,50 +113,27 @@ function App()
         const attacks: ExportAttack[] = await response.json();
 
         //create the csv rows, first row is the headers
-        let csvRows: string[][] = [];
-
-        csvRows[0] = ["ID", "Name", "Description", "Platforms", "Detection", "Phase"];
-
-        const attacksNum = attacks.length;
-
-        for (let i = 0; i < attacksNum; i++)
-        {
-            csvRows[i + 1] = [
-                attacks[i].Id,
-                attacks[i].Name,
-                attacks[i].Description,
-                attacks[i].x_mitre_platforms,
-                attacks[i].x_mitre_detection,
-                attacks[i].phase_name
-            ];
-        }
+        const csvRows = [
+            ["ID", "Name", "Description", "Platforms", "Detection", "Phase"],
+            ...attacks.map((attack) => [
+                attack.Id,
+                attack.Name,
+                attack.Description,
+                attack.x_mitre_platforms,
+                attack.x_mitre_detection,
+                attack.phase_name
+            ])
+        ];
 
         //convert the rows array into real csv text
-        let csvContent = "";
-
-        //go over every row in the csv table
-        for (let i = 0; i < csvRows.length; i++)
-        {
-            //go over every cell in the current row
-            for (let j = 0; j < csvRows[i].length; j++)
-            {
-                //take the current cell value
-                //if it is null or undefined, use empty text instead
-                const value = String(csvRows[i][j] ?? "");
-
-                //add the value to the csv text with quotes around it
-                //the quotes help if the text contains commas
-                csvContent += `"${value}"`;
-
-                //add comma between cells, but not after the last cell
-                if (j < csvRows[i].length - 1)
-                    csvContent += ",";
-            }
-
-            //add new line between rows, but not after the last row
-            if (i < csvRows.length - 1)
-                csvContent += "\n";
-        }
+        const csvContent = csvRows
+            .map((row) =>
+                row
+                    //Escape quotes inside cells
+                    .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`)
+                    .join(",")
+            )
+            .join("\n");
 
         //blob creates a downloadable file in the browser
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

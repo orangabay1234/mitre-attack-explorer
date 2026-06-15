@@ -82,22 +82,13 @@ function ChatModal({
     function addMessage(sender: "user" | "bot", text: string)
     {
         //create a new array because react state should not be changed directly
-        setMessages((prevMessages) => {
-            const newMessages: ChatMessage[] = [];
-
-            //copy old messages into the new array
-            for (let i = 0; i < prevMessages.length; i++)
-                newMessages[i] = prevMessages[i];
-
-            //add the new message at the end
-            newMessages[prevMessages.length] = 
+        setMessages((prevMessages) => [
+            ...prevMessages,
             {
-                sender: sender,
-                text: text
-            };
-
-            return newMessages;
-        });
+                sender,
+                text
+            }
+        ]);
     }
 
     function addBotMessage(text: string)

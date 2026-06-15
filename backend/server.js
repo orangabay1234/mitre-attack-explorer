@@ -1,9 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 const { Command } = require("commander");
+//Load env variables
+require("dotenv").config();
 
-//api key for virustotal
-const VT_API_KEY = "9f5afb6d69862f8bd12b622c3fd2426ebf06e0d44ccd5113248af45063d93a50";
+const VT_API_KEY = process.env.VT_API_KEY ?? "";
 
 //starts all api routes
 function apiHandle(db)
@@ -17,56 +18,35 @@ function apiHandle(db)
         const platforms = req.query.platform;
         const search = req.query.search;
         const phase = req.query.phase;
-        let attacks;
-        const joinString = "SELECT attacks.*, attack_pattern_phases.phase_name FROM attacks JOIN attack_pattern_phases ON attacks.Id = attack_pattern_phases.attack_id ";
-        
-        if (platforms === undefined && search === undefined && phase === undefined)
-        {
-            //get all attacks without any filters
-            attacks = db.prepare(joinString).all();
-        }
-        
-        else if (platforms !== undefined && search === undefined && phase === undefined)
-        {
-            //get attacks that match a specific platform
-            attacks = db.prepare(joinString + "WHERE attacks.x_mitre_platforms LIKE ?").all(`%${platforms}%`);
+
+        //Build sql filters
+        const filters = [];
+        const params = [];
+
+        if (platforms !== undefined) {
+            filters.push("attacks.x_mitre_platforms LIKE ?");
+            params.push(`%${platforms}%`);
         }
 
-        else if (search !== undefined && platforms === undefined && phase === undefined)
-        {
-            //get attacks where the search text appears in the attack name or description
-            attacks = db.prepare(joinString + "WHERE attacks.name LIKE ? OR attacks.description LIKE ?").all(`%${search}%`, `%${search}%`);
+        if (phase !== undefined) {
+            filters.push("attack_pattern_phases.phase_name = ?");
+            params.push(phase);
         }
 
-        else if (phase !== undefined && search === undefined && platforms === undefined)
-        {
-            //get attacks that belong to a specific phase
-            attacks = db.prepare(joinString + "WHERE attack_pattern_phases.phase_name = ?").all(phase);
+        if (search !== undefined) {
+            filters.push("(attacks.Name LIKE ? OR attacks.Description LIKE ?)");
+            params.push(`%${search}%`, `%${search}%`);
         }
 
-        else if (platforms !== undefined && search !== undefined && phase === undefined)
-        {
-            //get attacks that match a specific platform and also contain the search text in name or description
-            attacks = db.prepare(joinString + "WHERE attacks.x_mitre_platforms LIKE ? AND (attacks.name LIKE ? OR attacks.description LIKE ?)").all(`%${platforms}%`, `%${search}%`, `%${search}%`);
-        }
+        const whereClause = filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
 
-        else if (platforms !== undefined && phase !== undefined && search === undefined)
-        {
-            //get attacks that match a specific platform and belong to a specific phase
-            attacks = db.prepare(joinString + "WHERE attacks.x_mitre_platforms LIKE ? AND attack_pattern_phases.phase_name = ?").all(`%${platforms}%`, phase);
-        }
-
-        else if (search !== undefined && phase !== undefined && platforms === undefined)
-        {
-            //get attacks that belong to a specific phase and also contain the search text in name or description
-            attacks = db.prepare(joinString + "WHERE attack_pattern_phases.phase_name = ? AND (attacks.name LIKE ? OR attacks.description LIKE ?)").all(phase, `%${search}%`, `%${search}%`);
-        }
-
-        else if (platforms !== undefined && search !== undefined && phase !== undefined)
-        {
-            //get attacks that match platform, search text, and phase (together)
-            attacks = db.prepare(joinString + "WHERE attacks.x_mitre_platforms LIKE ? AND attack_pattern_phases.phase_name = ? AND (attacks.name LIKE ? OR attacks.description LIKE ?)").all(`%${platforms}%`, phase, `%${search}%`, `%${search}%`);
-        }
+        //Run one query with all filters
+        const attacks = db.prepare(`
+            SELECT attacks.*, attack_pattern_phases.phase_name
+            FROM attacks
+            JOIN attack_pattern_phases ON attacks.Id = attack_pattern_phases.attack_id
+            ${whereClause}
+        `).all(...params);
 
         //didnt find attack
         if (attacks.length === 0)
@@ -78,7 +58,6 @@ function apiHandle(db)
     mitre_app.get("/api/attacks/:id", (req, res) => {//for get one attack with id
         //variables declare
         const id = req.params.id;
-        let phaseName = "NA";
 
         const attack = db.prepare("SELECT * FROM attacks WHERE Id = ?").get(id);//get attack by id
 
@@ -87,18 +66,7 @@ function apiHandle(db)
 
         const phases = db.prepare("SELECT phase_name FROM attack_pattern_phases WHERE attack_id = ?").all(id);//get attack phases
 
-        if (phases.length !== 0)//check if there are phases
-        {
-            phaseName = "";
-
-            for (let i = 0; i < phases.length; i++)//for each phase
-            {
-                phaseName += phases[i].phase_name;
-
-                if (i < phases.length - 1)//add comma between phases
-                    phaseName += ", ";
-            }
-        }
+        const phaseName = formatPhaseNames(phases);
 
         attack.phase_name = phaseName;//add the phases to the attack json
 
@@ -141,6 +109,12 @@ function apiHandle(db)
         });
 
         return platformsResult;
+    }
+
+    function formatPhaseNames(phases)
+    {
+        //Turn phase rows into text
+        return phases.length > 0 ? phases.map((phase) => phase.phase_name).join(", ") : "NA";
     }
 
     mitre_app.get("/api/stats", (req, res) => {//for get stats about attacks
@@ -330,22 +304,7 @@ function apiHandle(db)
         //get all phases for this attack
         const phases = db.prepare("SELECT phase_name FROM attack_pattern_phases WHERE attack_id = ?").all(id);
 
-        let phaseName = "NA";
-
-        if (phases.length !== 0)
-        {
-            phaseName = "";
-
-            for (let i = 0; i < phases.length; i++)
-            {
-                phaseName += phases[i].phase_name;
-
-                if (i < phases.length - 1)
-                    phaseName += ", ";
-            }
-        }
-
-        attack.phase_name = phaseName;
+        attack.phase_name = formatPhaseNames(phases);
 
         return buildChatResponse(
             "Attack details:\n" +
@@ -379,8 +338,8 @@ function apiHandle(db)
             return buildChatResponse("Use: /scanFile <hash>");
 
         //stop if api key was not added
-        if (VT_API_KEY === "PUT_YOUR_VIRUSTOTAL_API_KEY_HERE")
-            return buildChatResponse("Add your VirusTotal API key in server.js first.");
+        if (!VT_API_KEY)
+            return buildChatResponse("VirusTotal API key is not configured.");
 
         try
         {

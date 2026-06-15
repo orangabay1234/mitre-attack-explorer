@@ -59,7 +59,7 @@ function AttacksTable({ search, selectedPlatform, selectedPhase, refreshKey }: A
     const [attacks, setAttacks] = useState<Attack[]>([]);
 
     //stores the current table page
-    const [page, setPage] = useState(0);
+    const [pageState, setPageState] = useState({ key: "", value: 0 });
 
     //stores the attack opened in the side drawer
     const [selectedAttack, setSelectedAttack] = useState<Attack | null>(null);
@@ -73,58 +73,66 @@ function AttacksTable({ search, selectedPlatform, selectedPhase, refreshKey }: A
     //how many attacks to show on one page
     const attacksPerPage = 5;
 
-useEffect(() => {
-    //start loading before the api call
-    setLoading(true);
-    setError("");
+    const pageResetKey = `${search}|${selectedPlatform}|${selectedPhase}`;
+    const page = pageState.key === pageResetKey ? pageState.value : 0;
 
-    //build query params for the api
-    const params = new URLSearchParams();
-
-    if (search.trim() !== "")
-        params.append("search", search);
-
-    if (selectedPlatform !== "")
-        params.append("platform", selectedPlatform);
-
-    if (selectedPhase !== "")
-        params.append("phase", selectedPhase);
-
-    const queryString = params.toString();
-
-    //choose normal url or filtered url
-    const url = queryString === ""
-        ? "http://localhost:3000/api/attacks"
-        : `http://localhost:3000/api/attacks?${queryString}`;
-
-    //get attacks from the backend
-    fetch(url)
-        .then((response) => {
-            //empty list is ok when no attacks found
-            if (response.status === 404)
-                return [];
-
-            if (!response.ok)
-                throw new Error("Failed to fetch attacks");
-
-            return response.json();
-        })
-        .then((data) => {
-            //save attacks and stop loading
-            setAttacks(data);
-            setLoading(false);
-        })
-        .catch((err) => {
-            //save error and stop loading
-            setError(err.message);
-            setLoading(false);
+    function setPage(value: number)
+    {
+        //Save page for current filters
+        setPageState({
+            key: pageResetKey,
+            value: value
         });
-}, [search, selectedPlatform, selectedPhase, refreshKey]);
+    }
 
     useEffect(() => {
-        //go back to first page when search changes
-        setPage(0);
-    }, [search]);
+        //build query params for the api
+        const params = new URLSearchParams();
+
+        if (search.trim() !== "")
+            params.append("search", search);
+
+        if (selectedPlatform !== "")
+            params.append("platform", selectedPlatform);
+
+        if (selectedPhase !== "")
+            params.append("phase", selectedPhase);
+
+        const queryString = params.toString();
+
+        //choose normal url or filtered url
+        const url = queryString === ""
+            ? "http://localhost:3000/api/attacks"
+            : `http://localhost:3000/api/attacks?${queryString}`;
+
+        Promise.resolve()
+            .then(() => {
+                //Start loading before fetch
+                setLoading(true);
+                setError("");
+                return fetch(url);
+            })
+            .then((response) => {
+                //empty list is ok when no attacks found
+                if (response.status === 404)
+                    return [];
+
+                if (!response.ok)
+                    throw new Error("Failed to fetch attacks");
+
+                return response.json();
+            })
+            .then((data) => {
+                //save attacks and stop loading
+                setAttacks(data);
+                setLoading(false);
+            })
+            .catch((err) => {
+                //save error and stop loading
+                setError(err.message);
+                setLoading(false);
+            });
+    }, [search, selectedPlatform, selectedPhase, refreshKey]);
 
 
     //table data after api filter

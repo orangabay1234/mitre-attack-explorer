@@ -1,7 +1,6 @@
 const fs = require('fs/promises');
 const { v5: uuidv5 } = require("uuid");
 const openDB = require("./database");
-const apiHandle = require("./server");
 
 const MY_NAMESPACE = "12ab21ba-abba-4aab-abab-21ba12ab21ba";//for UUID
 async function DirectoryFilesScan(directoryPath)
@@ -77,5 +76,9 @@ function insertToPhasesTable(attack_id, phase_name)
 }
 
 const db = openDB();
-DirectoryFilesScan("C:\\Rafael-Project\\backend\\mitre cti master enterprise-attack-attack-pattern");
-apiHandle(db);
+
+//Import data only
+DirectoryFilesScan("C:\\Rafael-Project\\backend\\mitre cti master enterprise-attack-attack-pattern")
+    .then(() => {
+        console.log("MITRE data import finished.");
+    });
