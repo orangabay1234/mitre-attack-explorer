@@ -3,9 +3,43 @@ import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import Button from "@mui/material/Button";
 
-function FilterSidebar()
+type FilterSidebarProps = {
+    selectedPlatform: string;
+    setSelectedPlatform: (value: string) => void;
+    selectedPhase: string;
+    setSelectedPhase: (value: string) => void;
+};
+
+function FilterSidebar({
+    selectedPlatform,
+    setSelectedPlatform,
+    selectedPhase,
+    setSelectedPhase
+}: FilterSidebarProps)
 {
+    function handlePlatformClick(platform: string)
+    {
+        //clear platform if it is already selected
+        if (selectedPlatform === platform)
+            setSelectedPlatform("");
+        else
+            //set selected platform
+            setSelectedPlatform(platform);
+    }
+
+    function handlePhaseClick(phase: string)
+    {
+        //clear phase if it is already selected
+        if (selectedPhase === phase)
+            setSelectedPhase("");
+        else
+            //set selected phase
+            setSelectedPhase(phase);
+    }
+
+    //show filter sidebar
     return (
         <Box
             sx={{
@@ -25,9 +59,35 @@ function FilterSidebar()
                 Platforms
             </Typography>
 
-            <FormControlLabel control={<Checkbox />} label="Windows" />
-            <FormControlLabel control={<Checkbox />} label="Linux" />
-            <FormControlLabel control={<Checkbox />} label="macOS" />
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={selectedPlatform === "Windows"}
+                        onChange={() => handlePlatformClick("Windows")}
+                    />
+                }
+                label="Windows"
+            />
+
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={selectedPlatform === "Linux"}
+                        onChange={() => handlePlatformClick("Linux")}
+                    />
+                }
+                label="Linux"
+            />
+
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={selectedPlatform === "macOS"}
+                        onChange={() => handlePlatformClick("macOS")}
+                    />
+                }
+                label="macOS"
+            />
 
             <Divider sx={{ marginY: 2 }} />
 
@@ -35,9 +95,49 @@ function FilterSidebar()
                 Phases
             </Typography>
 
-            <FormControlLabel control={<Checkbox />} label="Execution" />
-            <FormControlLabel control={<Checkbox />} label="Persistence" />
-            <FormControlLabel control={<Checkbox />} label="Discovery" />
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={selectedPhase === "execution"}
+                        onChange={() => handlePhaseClick("execution")}
+                    />
+                }
+                label="Execution"
+            />
+
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={selectedPhase === "persistence"}
+                        onChange={() => handlePhaseClick("persistence")}
+                    />
+                }
+                label="Persistence"
+            />
+
+            <FormControlLabel
+                control={
+                    <Checkbox
+                        checked={selectedPhase === "discovery"}
+                        onChange={() => handlePhaseClick("discovery")}
+                    />
+                }
+                label="Discovery"
+            />
+
+            <Divider sx={{ marginY: 2 }} />
+
+            <Button
+                fullWidth
+                variant="outlined"
+                sx={{ textTransform: "none" }}
+                onClick={() => {
+                    setSelectedPlatform("");
+                    setSelectedPhase("");
+                }}
+            >
+                Clear Filters
+            </Button>
         </Box>
     );
 }

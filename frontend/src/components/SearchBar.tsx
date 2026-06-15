@@ -1,18 +1,21 @@
-import { useState } from "react";
 import TextField from "@mui/material/TextField";
 import InputAdornment from "@mui/material/InputAdornment";
 import SearchIcon from "@mui/icons-material/Search";
 import Box from "@mui/material/Box";
 
-function SearchBar()
-{
-    const [search, setSearch] = useState("");
+type SearchBarProps = {
+    search: string;
+    setSearch: (value: string) => void;
+};
 
+function SearchBar({ search, setSearch }: SearchBarProps)
+{
+    //show search input and update search text
     return (
-        <Box sx={{ width: "55%", margin: "110px auto 15px auto" }}>
+        <Box sx={{ width: "70%", maxWidth: "1100px", margin: "24px auto 12px auto" }}>
             <TextField
                 fullWidth
-                placeholder="Search CVE, technique, platform..."
+                placeholder="Search attack, platform, phase, risk..."
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 variant="outlined"
